@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/lib/auth';
 import Link from 'next/link';
-import { LogIn, Mail, Lock, Loader2, ArrowLeft, Zap, Github } from 'lucide-react';
+import { LogIn, Mail, Lock, Loader2, ArrowLeft, Zap } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
