@@ -7,6 +7,10 @@ export function errorHandler(err: Error, req: Request, res: Response, _next: Nex
     return res.status(404).json({ error: err.message });
   }
 
+  if (err.message.toLowerCase().includes('invalid')) {
+    return res.status(401).json({ error: err.message });
+  }
+
   if (err.message.includes('required') || err.message.includes('must be') || err.message.includes('already')) {
     return res.status(400).json({ error: err.message });
   }

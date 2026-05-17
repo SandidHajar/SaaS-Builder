@@ -4,3 +4,7 @@ dist/
 .env.local
 *.log
 .next/
+
+./backend/node_modules
+
+./frontend/node_modules

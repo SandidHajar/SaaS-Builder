@@ -15,6 +15,7 @@ export interface Project {
   name: string;
   description: string;
   status: ProjectStatus;
+  artifacts?: Artifact[];
   ideaAnalysis?: Artifact | null;
   roadmap?: Artifact | null;
   architecture?: Artifact | null;

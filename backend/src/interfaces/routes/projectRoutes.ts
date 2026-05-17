@@ -1,10 +1,14 @@
 import { Router } from 'express';
 import { ProjectController } from '../controllers/ProjectController';
+import { authMiddleware } from '../middlewares/authMiddleware';
 import { rateLimiter } from '../middlewares/rateLimiter';
 
 const router = Router();
 
-// GET /api/projects - List all projects
+// All project routes require authentication
+router.use(authMiddleware);
+
+// GET /api/projects - List all projects for current user
 router.get('/', ProjectController.list);
 
 // POST /api/projects - Create a new project

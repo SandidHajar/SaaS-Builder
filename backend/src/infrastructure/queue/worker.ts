@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { Worker, Job } from 'bullmq';
 import IORedis from 'ioredis';
 import { PrismaProjectRepository } from '../repositories/PrismaProjectRepository';
-import { OpenAIService } from '../ai/OpenAIService';
+import { createAIService } from '../ServiceFactory';
 import { GenerateArtifactsUseCase } from '../../application/usecases/GenerateArtifacts';
 
 const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
@@ -10,7 +10,7 @@ const connection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379'
 });
 
 const projectRepository = new PrismaProjectRepository();
-const aiService = new OpenAIService();
+const aiService = createAIService();
 const generateArtifacts = new GenerateArtifactsUseCase(projectRepository, aiService);
 
 const worker = new Worker(

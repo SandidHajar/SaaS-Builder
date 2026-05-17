@@ -1,16 +1,17 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../src/infrastructure/database/prismaClient';
 
 async function main() {
   // Create a sample user
   const user = await prisma.user.upsert({
     where: { email: 'demo@aisaasbuilder.com' },
-    update: {},
+    update: {
+      passwordHash: '$2b$10$0dQXtwnMWY5gZ/l7yn8zneNSQe0PHVnFO7YpGG4I7XgDXBGBQS6Gi',
+    } as any,
     create: {
       email: 'demo@aisaasbuilder.com',
       name: 'Demo User',
-    },
+      passwordHash: '$2b$10$0dQXtwnMWY5gZ/l7yn8zneNSQe0PHVnFO7YpGG4I7XgDXBGBQS6Gi', // demo123 hashed
+    } as any,
   });
 
   console.log('Created user:', user);

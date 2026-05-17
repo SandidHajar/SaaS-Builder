@@ -1,892 +1,244 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
-import { Project } from '@/types';
-import { api } from '@/lib/api';
-import { 
-  Lightbulb, Map, Building2, Frown, Clock, Zap, CheckCircle2, XCircle, 
-  Check, AlertTriangle, Rocket, Calendar, Shield, RotateCcw, Sparkles, 
-  SquareCheck, ArrowLeft
-} from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Target, DollarSign, AlertTriangle } from 'lucide-react';
 
-type TabKey = 'idea' | 'roadmap' | 'architecture';
-
-const tabs: { key: TabKey; label: string; icon: any }[] = [
-  { key: 'idea', label: 'Idea Analysis', icon: Lightbulb },
-  { key: 'roadmap', label: 'MVP Roadmap', icon: Map },
-  { key: 'architecture', label: 'Architecture', icon: Building2 },
-];
-
-export default function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
-  const [project, setProject] = useState<Project | null>(null);
-  const [activeTab, setActiveTab] = useState<TabKey>('idea');
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState('');
-  const [genError, setGenError] = useState('');
-
-  const fetchProject = async () => {
-    try {
-      const data = await api.projects.get(id);
-      setProject(data);
-      if (data.status === 'GENERATING') {
-        setTimeout(fetchProject, 3000);
-      }
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function ProjectDetailPage({ params }: { params: { id: string } }) {
+  const [activeTab, setActiveTab] = useState('business');
+  const [isGenerating, setIsGenerating] = useState(true);
 
   useEffect(() => {
-    fetchProject();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    const timer = setTimeout(() => {
+      setIsGenerating(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  const handleGenerate = async () => {
-    setGenerating(true);
-    setGenError('');
-    try {
-      await api.projects.generate(id);
-      // Poll for results
-      const poll = async () => {
-        const data = await api.projects.get(id);
-        setProject(data);
-        if (data.status === 'GENERATING') {
-          setTimeout(poll, 3000);
-        } else {
-          setGenerating(false);
-        }
-      };
-      setTimeout(poll, 2000);
-    } catch (err: any) {
-      setGenError(err.message);
-      setGenerating(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="container" style={{ maxWidth: '960px' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div className="skeleton" style={{ height: '40px', width: '200px' }} />
-          <div className="skeleton" style={{ height: '80px' }} />
-          <div className="skeleton" style={{ height: '48px' }} />
-          <div className="skeleton" style={{ height: '400px' }} />
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !project) {
-    return (
-      <div className="container" style={{ maxWidth: '960px', textAlign: 'center', paddingTop: '80px' }}>
-        <div style={{ color: 'var(--text-muted)', marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
-          <Frown size={64} />
-        </div>
-        <h2 style={{ marginBottom: '8px' }}>Project not found</h2>
-        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>{error}</p>
-        <a href="/" className="btn-gradient">Back to Dashboard</a>
-      </div>
-    );
-  }
-
-  const statusConfig: Record<string, { label: string; class: string; icon: any }> = {
-    PENDING: { label: 'Pending', class: 'badge-pending', icon: Clock },
-    GENERATING: { label: 'Generating...', class: 'badge-generating', icon: Zap },
-    COMPLETED: { label: 'Completed', class: 'badge-completed', icon: CheckCircle2 },
-    FAILED: { label: 'Failed', class: 'badge-failed', icon: XCircle },
-  };
-
-  const status = statusConfig[project.status] || statusConfig.PENDING;
-  const isGenerating = project.status === 'GENERATING' || generating;
-
-  const getArtifactContent = (tab: TabKey) => {
-    switch (tab) {
-      case 'idea': return project.ideaAnalysis?.content;
-      case 'roadmap': return project.roadmap?.content;
-      case 'architecture': return project.architecture?.content;
-    }
-  };
-
-  const content = getArtifactContent(activeTab);
+  const tabs = [
+    { id: 'business', label: 'Business Analysis' },
+    { id: 'roadmap', label: 'MVP Roadmap' },
+    { id: 'technical', label: 'Technical Architecture' },
+  ];
 
   return (
-    <div className="container" style={{ maxWidth: '1024px', marginTop: '32px' }}>
-      <div className="fade-in">
-        {/* Breadcrumb */}
-        <a href="/" style={{
-          color: 'var(--text-muted)',
-          textDecoration: 'none',
-          fontSize: '0.85rem',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '6px',
-          marginBottom: '24px',
-          fontWeight: 500,
-          transition: 'color 0.2s',
-        }}>
-          <ArrowLeft size={16} /> Back to Dashboard
-        </a>
-
-        {/* Project Header Banner */}
-        <div className="glass-card" style={{ 
-          padding: '40px', 
-          marginBottom: '32px',
-          background: 'linear-gradient(180deg, var(--bg-card) 0%, rgba(20, 20, 30, 0.2) 100%)',
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)'
-        }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'flex-start',
-            gap: '24px',
-            flexWrap: 'wrap',
-          }}>
-            <div style={{ flex: 1, maxWidth: '640px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                <h1 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.4rem)', fontWeight: 800, letterSpacing: '-0.02em', margin: 0, lineHeight: 1.1 }}>
-                  {project.name}
-                </h1>
-                <span className={`badge ${status.class}`} style={{ padding: '6px 14px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                  {isGenerating && <span className="pulse-dot" style={{ width: '6px', height: '6px' }} />}
-                  <status.icon size={14} /> {status.label}
-                </span>
-              </div>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, fontSize: '1.05rem', margin: 0 }}>
-                {project.description}
-              </p>
-            </div>
-            <div style={{ flexShrink: 0 }}>
-              {(project.status === 'PENDING' || project.status === 'FAILED') && (
-                <button
-                  className="btn-gradient"
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  style={{ padding: '14px 28px', borderRadius: '50px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                >
-                  {isGenerating ? <><Zap size={18} /> Initializing Agents...</> : <><Sparkles size={18} /> Generate with AI</>}
-                </button>
-              )}
-              {project.status === 'COMPLETED' && (
-                <button
-                  className="btn-ghost"
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                  style={{ padding: '12px 24px', borderRadius: '50px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <RotateCcw size={16} /> Regenerate
-                </button>
-              )}
-            </div>
-          </div>
-          {genError && (
-            <div style={{
-              marginTop: '20px',
-              padding: '16px',
-              borderRadius: '12px',
-              background: 'rgba(239, 68, 68, 0.05)',
-              border: '1px solid rgba(239, 68, 68, 0.15)',
-              color: 'var(--error)',
-              fontSize: '0.95rem',
-              fontWeight: 500
-            }}>
-              {genError}
-            </div>
-          )}
-        </div>
-
-        {/* Generating State */}
-        {isGenerating && (
-          <div className="glass-card" style={{
-            padding: '80px 32px',
-            textAlign: 'center',
-            marginBottom: '32px',
-          }}>
-            <div className="spinner" style={{ margin: '0 auto 32px', width: '48px', height: '48px' }} />
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 600, marginBottom: '12px', letterSpacing: '-0.01em' }}>
-              Agents are analyzing your concept...
-            </h3>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', maxWidth: '400px', margin: '0 auto' }}>
-              We are parallel-processing your business model, MVP features, and system architecture. This takes around 15-30 seconds.
-            </p>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '32px',
-              marginTop: '40px',
-            }}>
-              {tabs.map((t) => (
-                <div key={t.key} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                  fontWeight: 500
-                }}>
-                  <span className="pulse-dot" style={{ background: 'var(--accent-secondary)' }} />
-                  <t.icon size={16} /> {t.label}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tabs + Content */}
-        {!isGenerating && project.status === 'COMPLETED' && (
-          <>
-            {/* Pill Tabs */}
-            <div style={{ 
-              display: 'flex', 
-              gap: '8px', 
-              marginBottom: '32px', 
-              background: 'var(--bg-card)', 
-              padding: '6px', 
-              borderRadius: '50px',
-              width: 'fit-content',
-              border: '1px solid var(--border-color)'
-            }}>
-              {tabs.map((tab) => (
-                <button
-                  key={tab.key}
-                  className={`tab-button ${activeTab === tab.key ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.key)}
-                  style={{
-                    padding: '10px 24px',
-                    borderRadius: '40px',
-                    fontWeight: 600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}
-                >
-                  <tab.icon size={18} /> {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Content */}
-            <div className="fade-in" key={activeTab}>
-              {content ? (
-                <div className="glass-card" style={{ padding: '48px', borderTopLeftRadius: activeTab === 'idea' ? '8px' : '20px' }}>
-                  {activeTab === 'idea' && <IdeaContent data={content} />}
-                  {activeTab === 'roadmap' && <RoadmapContent data={content} />}
-                  {activeTab === 'architecture' && <ArchitectureContent data={content} />}
-                </div>
-              ) : (
-                <div className="glass-card" style={{ padding: '64px', textAlign: 'center', borderStyle: 'dashed' }}>
-                  <p style={{ color: 'var(--text-muted)' }}>No data available for this tab.</p>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* Pending State */}
-        {!isGenerating && project.status === 'PENDING' && (
-          <div className="glass-card" style={{ padding: '80px 32px', textAlign: 'center', borderStyle: 'dashed' }}>
-            <div style={{ color: 'var(--accent-primary)', marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-              <Sparkles size={64} />
-            </div>
-            <h3 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '12px' }}>
-              Agents Standing By
-            </h3>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '32px', maxWidth: '400px', margin: '0 auto', lineHeight: 1.6 }}>
-              Click the "Generate with AI" button above to spin up our virtual architects, product managers, and business analysts.
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Idea Analysis Tab ─── */
-function IdeaContent({ data }: { data: Record<string, any> }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-      {/* Summary */}
-      {data.summary && (
-        <Section title="Summary">
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, fontSize: '1rem' }}>{data.summary}</p>
-        </Section>
-      )}
-
-      {/* Problem */}
-      {data.problemStatement && (
-        <Section title="Problem Statement">
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>{data.problemStatement}</p>
-        </Section>
-      )}
-
-      {/* Target Audience */}
-      {data.targetAudience && (
-        <Section title="Target Audience">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            <InfoCard label="Primary" value={data.targetAudience.primary} />
-            <InfoCard label="Secondary" value={data.targetAudience.secondary} />
-            <InfoCard label="Market Size" value={data.targetAudience.marketSize} />
-          </div>
-        </Section>
-      )}
-
-      {/* Value Proposition */}
-      {data.valueProposition && (
-        <Section title="Value Proposition">
-          <div style={{
-            background: 'rgba(99, 102, 241, 0.06)',
-            padding: '16px 20px',
-            borderRadius: '12px',
-            borderLeft: '3px solid var(--accent-primary)',
-          }}>
-            <p style={{ color: 'var(--text-primary)', fontWeight: 500, lineHeight: 1.6 }}>{data.valueProposition}</p>
-          </div>
-        </Section>
-      )}
-
-      {/* Competitive Advantages */}
-      {data.competitiveAdvantage?.length > 0 && (
-        <Section title="Competitive Advantages">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {data.competitiveAdvantage.map((item: string, i: number) => (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '10px 14px',
-                borderRadius: '10px',
-                background: 'var(--bg-card)',
-              }}>
-                <span style={{ color: 'var(--success)' }}><Check size={18} /></span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.92rem' }}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Revenue Model */}
-      {data.revenueModel && (
-        <Section title="Revenue Model">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            <InfoCard label="Primary Revenue" value={data.revenueModel.primary} />
-            <InfoCard label="Pricing" value={data.revenueModel.pricingStrategy} />
-          </div>
-          {data.revenueModel.secondary?.length > 0 && (
-            <div style={{ marginTop: '12px' }}>
-              <p className="section-label" style={{ marginBottom: '6px' }}>Secondary Streams</p>
-              {data.revenueModel.secondary.map((s: string, i: number) => (
-                <span key={i} style={{
-                  display: 'inline-block',
-                  padding: '4px 12px',
-                  background: 'var(--bg-card)',
-                  borderRadius: '20px',
-                  fontSize: '0.82rem',
-                  color: 'var(--text-secondary)',
-                  marginRight: '8px',
-                  marginBottom: '6px',
-                }}>
-                  {s}
-                </span>
-              ))}
-            </div>
-          )}
-        </Section>
-      )}
-
-      {/* Viability Score */}
-      {data.viabilityScore && (
-        <Section title="Viability Score">
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '16px',
-          }}>
-            <div style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '50%',
-              background: `conic-gradient(var(--accent-primary) ${data.viabilityScore * 10}%, var(--bg-card) 0%)`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <div style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '50%',
-                background: 'var(--bg-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.4rem',
-                fontWeight: 700,
-              }}>
-                {data.viabilityScore}/10
-              </div>
-            </div>
-            {data.recommendation && (
-              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, flex: 1 }}>{data.recommendation}</p>
-            )}
-          </div>
-        </Section>
-      )}
-
-      {/* Risks & Opportunities */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-        {data.risks?.length > 0 && (
-          <Section title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><AlertTriangle size={18} /> Risks</span>}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {data.risks.map((r: string, i: number) => (
-                <p key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', padding: '6px 0', borderBottom: '1px solid var(--border-color)' }}>
-                  {r}
-                </p>
-              ))}
-            </div>
-          </Section>
-        )}
-        {data.opportunities?.length > 0 && (
-          <Section title={<span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><Rocket size={18} /> Opportunities</span>}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {data.opportunities.map((o: string, i: number) => (
-                <p key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', padding: '6px 0', borderBottom: '1px solid var(--border-color)' }}>
-                  {o}
-                </p>
-              ))}
-            </div>
-          </Section>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/* ─── Roadmap Tab ─── */
-function RoadmapContent({ data }: { data: Record<string, any> }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-      {/* Vision & Goal */}
-      {data.vision && (
-        <div style={{
-          background: 'rgba(99, 102, 241, 0.06)',
-          padding: '20px 24px',
-          borderRadius: '14px',
-          borderLeft: '3px solid var(--accent-primary)',
-        }}>
-          <p className="section-label">Vision</p>
-          <p style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '1.05rem' }}>{data.vision}</p>
-          {data.mvpGoal && (
-            <p style={{ color: 'var(--text-secondary)', marginTop: '8px', fontSize: '0.92rem' }}>
-              <strong>MVP Goal:</strong> {data.mvpGoal}
-            </p>
-          )}
-          {data.timeline && (
-            <span className="badge badge-generating" style={{ marginTop: '10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <Clock size={14} /> {data.timeline}
-            </span>
-          )}
+    <div className="space-y-8 max-w-[1000px] mx-auto pb-20 animate-slide-up">
+      
+      {isGenerating && (
+        <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 flex items-center justify-center gap-3 backdrop-blur-sm">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse" />
+          <span className="font-mono text-sm text-blue-400 font-medium tracking-wide">Orchestrating infrastructure...</span>
         </div>
       )}
 
-      {/* Phases Timeline */}
-      {data.phases?.length > 0 && (
-        <Section title="Development Phases">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {data.phases.map((phase: any, i: number) => (
-              <div key={i} style={{
-                padding: '20px',
-                borderRadius: '12px',
-                background: 'var(--bg-card)',
-                borderLeft: `3px solid ${i === 0 ? 'var(--accent-primary)' : i === 1 ? 'var(--accent-secondary)' : 'var(--success)'}`,
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h4 style={{ fontWeight: 700, fontSize: '1rem' }}>{phase.name}</h4>
-                  {phase.duration && <span className="badge badge-pending" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Calendar size={14} /> {phase.duration}</span>}
+      <div className="glass-panel p-8 rounded-3xl flex flex-col md:flex-row justify-between items-start gap-6 border-white/10 relative overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-64 h-64 bg-violet-600/20 blur-[100px] pointer-events-none" />
+        
+        <div className="space-y-4 relative z-10">
+          <div className="flex flex-wrap items-center gap-4">
+            <h1 className="font-heading font-bold text-3xl text-white">Smart Grocery AI</h1>
+            <div className="flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+              <div className={`w-2 h-2 rounded-full ${isGenerating ? 'bg-blue-500 animate-pulse' : 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]'}`} />
+              <span className={`font-mono text-xs font-bold uppercase tracking-wider ${isGenerating ? 'text-blue-400' : 'text-green-400'}`}>
+                {isGenerating ? 'Deploying' : 'Active'}
+              </span>
+            </div>
+            <span className="font-mono text-xs text-gray-400 border-l border-white/10 pl-4 py-1">Oct 12, 2025</span>
+          </div>
+          <p className="font-sans text-gray-300 max-w-2xl leading-relaxed">
+            Real-time inventory orchestration with predictive restock pipelines based on computer vision.
+          </p>
+        </div>
+        
+        <div className="text-right shrink-0 relative z-10">
+          <p className="font-mono text-[10px] text-gray-400 uppercase tracking-widest mb-2 font-bold">Viability Score</p>
+          <div className="flex items-baseline justify-end gap-1">
+            <span className="font-heading font-bold text-6xl text-transparent bg-clip-text bg-gradient-to-br from-green-400 to-emerald-600 leading-none drop-shadow-[0_0_15px_rgba(52,211,153,0.3)]">8.5</span>
+            <span className="font-heading font-bold text-2xl text-gray-500">/10</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-2 border-b border-white/10 overflow-x-auto pb-1">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`
+              px-6 py-4 font-sans font-medium text-sm transition-all whitespace-nowrap rounded-t-xl
+              ${activeTab === tab.id 
+                ? 'bg-white/5 border-b-2 border-violet-500 text-violet-400' 
+                : 'text-gray-400 hover:text-white hover:bg-white/5'}
+            `}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="pt-2">
+        {isGenerating ? (
+          <div className="space-y-6">
+            <div className="h-32 bg-white/5 rounded-2xl animate-pulse border border-white/5" />
+            <div className="h-32 bg-white/5 rounded-2xl animate-pulse border border-white/5" />
+            <div className="h-48 bg-white/5 rounded-2xl animate-pulse border border-white/5" />
+          </div>
+        ) : (
+          <div className="animate-fade-in">
+            {activeTab === 'business' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="card space-y-5 bg-white/5 border-white/10">
+                  <div className="w-12 h-12 rounded-xl bg-violet-500/20 text-violet-400 flex items-center justify-center border border-violet-500/20 shadow-[0_0_15px_rgba(139,92,246,0.15)]">
+                    <Target size={24} />
+                  </div>
+                  <h3 className="font-heading font-bold text-xl text-white">Target Audience</h3>
+                  <p className="font-sans text-sm text-gray-300 leading-relaxed">
+                    Urban professionals (25-45) who value time over money, tech-savvy parents, and health-conscious individuals who stick to strict grocery lists.
+                  </p>
                 </div>
-                {phase.goals?.length > 0 && (
-                  <div style={{ marginBottom: '10px' }}>
-                    <p className="section-label">Goals</p>
-                    {phase.goals.map((g: string, j: number) => (
-                      <p key={j} style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', marginBottom: '4px' }}>• {g}</p>
+                
+                <div className="card space-y-5 bg-white/5 border-white/10">
+                  <div className="w-12 h-12 rounded-xl bg-green-500/20 text-green-400 flex items-center justify-center border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.15)]">
+                    <DollarSign size={24} />
+                  </div>
+                  <h3 className="font-heading font-bold text-xl text-white">Revenue Model</h3>
+                  <p className="font-sans text-sm text-gray-300 leading-relaxed">
+                    Freemium B2C app (ads/coupons) + B2B API licensing for grocery chains to integrate the routing algorithm into their own apps.
+                  </p>
+                </div>
+
+                <div className="card md:col-span-2 space-y-5 bg-white/5 border-white/10">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/20 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                      <AlertTriangle size={24} />
+                    </div>
+                    <h3 className="font-heading font-bold text-xl text-white">Critical Constraints</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {['High acquisition cost for B2B grocery partnerships.', 'Map data accuracy across different store layouts.', 'User drop-off if initial store maps are incomplete.'].map((risk, i) => (
+                      <div key={i} className="p-4 rounded-xl bg-black/20 border border-white/5 flex gap-3">
+                        <span className="text-amber-400 mt-0.5">•</span>
+                        <span className="text-gray-300 font-sans text-sm">{risk}</span>
+                      </div>
                     ))}
                   </div>
-                )}
-                {phase.deliverables?.length > 0 && (
-                  <div>
-                    <p className="section-label">Deliverables</p>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {phase.deliverables.map((d: string, j: number) => (
-                        <span key={j} style={{
-                          padding: '3px 10px',
-                          borderRadius: '16px',
-                          background: 'rgba(99, 102, 241, 0.08)',
-                          fontSize: '0.8rem',
-                          color: 'var(--accent-primary)',
-                        }}>
-                          {d}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
-            ))}
-          </div>
-        </Section>
-      )}
+            )}
 
-      {/* Features */}
-      {data.features && (
-        <Section title="Feature Priorities">
-          {(['mustHave', 'shouldHave', 'niceToHave'] as const).map((tier) => {
-            const items = data.features[tier];
-            if (!items?.length) return null;
-            const tierLabels: Record<string, { label: string; color: string }> = {
-              mustHave: { label: 'Must Have (P0)', color: 'var(--error)' },
-              shouldHave: { label: 'Should Have (P1)', color: 'var(--warning)' },
-              niceToHave: { label: 'Nice to Have (P2)', color: 'var(--text-muted)' },
-            };
-            const { label, color } = tierLabels[tier];
-            return (
-              <div key={tier} style={{ marginBottom: '16px' }}>
-                <p style={{ fontWeight: 600, fontSize: '0.88rem', color, marginBottom: '8px' }}>{label}</p>
-                {items.map((f: any, i: number) => (
-                  <div key={i} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: 'var(--bg-card)',
-                    marginBottom: '6px',
-                  }}>
-                    <div>
-                      <span style={{ fontWeight: 600, fontSize: '0.9rem' }}>{f.name}</span>
-                      {f.description && <span style={{ color: 'var(--text-muted)', marginLeft: '8px', fontSize: '0.83rem' }}>— {f.description}</span>}
+            {activeTab === 'roadmap' && (
+              <div className="space-y-6 relative">
+                <div className="absolute top-8 bottom-8 left-[31px] w-0.5 bg-gradient-to-b from-violet-500 via-cyan-500 to-fuchsia-500 opacity-20" />
+                {[
+                  { phase: 'Phase 1: Foundation', color: 'bg-violet-500', shadow: 'shadow-[0_0_15px_rgba(139,92,246,0.4)]', features: ['User Auth & Profiles', 'Basic List Creation', 'Static Store Map Integration'] },
+                  { phase: 'Phase 2: Core Value', color: 'bg-cyan-500', shadow: 'shadow-[0_0_15px_rgba(6,182,212,0.4)]', features: ['Routing Algorithm v1', 'Real-time Item Checking', 'Store Mapping Tool for Admins'] },
+                  { phase: 'Phase 3: Scale', color: 'bg-fuchsia-500', shadow: 'shadow-[0_0_15px_rgba(217,70,239,0.4)]', features: ['Predictive AI Suggestions', 'B2B API endpoints', 'Loyalty Card Integration'] }
+                ].map((item, idx) => (
+                  <div key={idx} className="card bg-white/5 border-white/10 flex gap-6 group hover:border-white/20 transition-colors relative z-10">
+                    <div className={`mt-1 shrink-0 w-4 h-4 rounded-full ${item.color} ${item.shadow} border-2 border-[#09090b] group-hover:scale-125 transition-transform`} />
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-4">
+                        <h4 className="font-heading text-lg font-bold text-white">{item.phase}</h4>
+                        <span className="font-mono text-[10px] uppercase font-bold tracking-widest bg-white/10 text-gray-300 px-3 py-1 rounded-full border border-white/10">Beta release</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {item.features.map((feat, i) => (
+                          <div key={i} className="font-sans text-sm text-gray-400 bg-black/40 px-4 py-2.5 rounded-lg border border-white/5 flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-gray-600" />
+                            {feat}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    {f.effort && <span className="badge badge-pending" style={{ fontSize: '0.72rem' }}>{f.effort}</span>}
                   </div>
                 ))}
               </div>
-            );
-          })}
-        </Section>
-      )}
+            )}
 
-      {/* Success Metrics */}
-      {data.successMetrics?.length > 0 && (
-        <Section title="Success Metrics">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            {data.successMetrics.map((m: any, i: number) => (
-              <InfoCard key={i} label={m.metric} value={m.target} />
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Launch Checklist */}
-      {data.launchChecklist?.length > 0 && (
-        <Section title="Launch Checklist">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {data.launchChecklist.map((item: string, i: number) => (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '8px 12px',
-                borderRadius: '8px',
-                background: 'var(--bg-card)',
-              }}>
-                <span style={{
-                  color: 'var(--accent-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}>
-                  <SquareCheck size={20} />
-                </span>
-                <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{item}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-    </div>
-  );
-}
-
-/* ─── Architecture Tab ─── */
-function ArchitectureContent({ data }: { data: Record<string, any> }) {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-      {/* Overview */}
-      {data.overview && (
-        <Section title="Architecture Overview">
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>{data.overview}</p>
-        </Section>
-      )}
-
-      {/* Tech Stack */}
-      {data.techStack && (
-        <Section title="Tech Stack">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-            {Object.entries(data.techStack).map(([category, details]: [string, any]) => (
-              <div key={category} style={{
-                padding: '20px',
-                borderRadius: '12px',
-                background: 'var(--bg-card)',
-              }}>
-                <h4 style={{
-                  fontWeight: 700,
-                  fontSize: '0.9rem',
-                  textTransform: 'capitalize',
-                  marginBottom: '12px',
-                  color: 'var(--accent-primary)',
-                }}>
-                  {category.replace(/_/g, ' ')}
-                </h4>
-                {typeof details === 'object' && Object.entries(details).map(([key, value]: [string, any]) => {
-                  if (key === 'reasoning') return null;
-                  return (
-                    <div key={key} style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>
-                        {key.replace(/_/g, ' ')}
-                      </span>
-                      <p style={{ fontWeight: 500, fontSize: '0.92rem' }}>
-                        {typeof value === 'string' ? value : Array.isArray(value) ? value.join(', ') : JSON.stringify(value)}
-                      </p>
-                    </div>
-                  );
-                })}
-                {details?.reasoning && (
-                  <p style={{
-                    fontSize: '0.8rem',
-                    color: 'var(--text-muted)',
-                    marginTop: '8px',
-                    fontStyle: 'italic',
-                    borderTop: '1px solid var(--border-color)',
-                    paddingTop: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <Lightbulb size={14} color="var(--accent-secondary)" /> {details.reasoning}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* System Design */}
-      {data.systemDesign && (
-        <Section title="System Design">
-          {data.systemDesign.components?.length > 0 && (
-            <div style={{ marginBottom: '16px' }}>
-              <p className="section-label">Components</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-                {data.systemDesign.components.map((c: any, i: number) => (
-                  <div key={i} style={{
-                    padding: '14px 16px',
-                    borderRadius: '10px',
-                    background: 'var(--bg-card)',
-                    borderLeft: '3px solid var(--accent-primary)',
-                  }}>
-                    <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '4px' }}>{c.name}</p>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginBottom: '4px' }}>{c.responsibility}</p>
-                    <span style={{
-                      padding: '2px 8px',
-                      background: 'rgba(99, 102, 241, 0.08)',
-                      borderRadius: '12px',
-                      fontSize: '0.75rem',
-                      color: 'var(--accent-primary)',
-                    }}>
-                      {c.technology}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {data.systemDesign.dataFlow && (
-            <div style={{ marginBottom: '16px' }}>
-              <p className="section-label">Data Flow</p>
-              <div style={{
-                padding: '16px',
-                borderRadius: '10px',
-                background: 'var(--bg-card)',
-                fontFamily: 'monospace',
-                fontSize: '0.88rem',
-                color: 'var(--accent-primary)',
-                letterSpacing: '0.5px',
-              }}>
-                {data.systemDesign.dataFlow}
-              </div>
-            </div>
-          )}
-          {data.systemDesign.security?.length > 0 && (
-            <div>
-              <p className="section-label">Security</p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {data.systemDesign.security.map((s: string, i: number) => (
-                  <span key={i} style={{
-                    padding: '6px 14px',
-                    borderRadius: '20px',
-                    background: 'rgba(34, 197, 94, 0.08)',
-                    color: 'var(--success)',
-                    fontSize: '0.82rem',
-                    fontWeight: 500,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px'
-                  }}>
-                    <Shield size={14} /> {s}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-        </Section>
-      )}
-
-      {/* Data Models */}
-      {data.dataModels?.length > 0 && (
-        <Section title="Data Models">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {data.dataModels.map((model: any, i: number) => (
-              <div key={i} style={{ padding: '16px', borderRadius: '10px', background: 'var(--bg-card)' }}>
-                <h4 style={{ fontWeight: 700, marginBottom: '10px', color: 'var(--accent-primary)' }}>{model.name}</h4>
-                {model.fields?.length > 0 && (
-                  <div style={{
-                    fontFamily: 'monospace',
-                    fontSize: '0.82rem',
-                    padding: '10px 14px',
-                    borderRadius: '8px',
-                    background: 'var(--bg-primary)',
-                    marginBottom: '8px',
-                  }}>
-                    {model.fields.map((f: string, j: number) => (
-                      <div key={j} style={{ padding: '2px 0', color: 'var(--text-secondary)' }}>{f}</div>
+            {activeTab === 'technical' && (
+              <div className="space-y-8">
+                <div className="card bg-white/5 border-white/10">
+                  <h3 className="font-heading font-bold text-xl text-white mb-6">Stack Topology</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { cat: 'Client Edge', tech: 'Next.js 14 + Tailwind', color: 'text-violet-400', border: 'border-violet-500/20', bg: 'bg-violet-500/10' },
+                      { cat: 'Compute Core', tech: 'Node.js + Express', color: 'text-cyan-400', border: 'border-cyan-500/20', bg: 'bg-cyan-500/10' },
+                      { cat: 'Persistence', tech: 'PostgreSQL + Prisma', color: 'text-fuchsia-400', border: 'border-fuchsia-500/20', bg: 'bg-fuchsia-500/10' },
+                      { cat: 'Neural Engine', tech: 'Python FastAPI', color: 'text-emerald-400', border: 'border-emerald-500/20', bg: 'bg-emerald-500/10' },
+                    ].map((stack, i) => (
+                      <div key={i} className={`p-5 rounded-2xl border ${stack.border} ${stack.bg} backdrop-blur-sm`}>
+                        <div className="font-mono text-[10px] text-gray-400 uppercase tracking-widest mb-3 font-bold">{stack.cat}</div>
+                        <div className={`font-sans font-bold text-sm ${stack.color}`}>
+                          {stack.tech}
+                        </div>
+                      </div>
                     ))}
                   </div>
-                )}
-                {model.relationships && (
-                  <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                    {model.relationships}
-                  </p>
-                )}
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
+                </div>
 
-      {/* API Endpoints */}
-      {data.apiEndpoints?.length > 0 && (
-        <Section title="API Endpoints">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {data.apiEndpoints.map((ep: any, i: number) => (
-              <div key={i} style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                background: 'var(--bg-card)',
-              }}>
-                <span style={{
-                  padding: '2px 10px',
-                  borderRadius: '6px',
-                  fontFamily: 'monospace',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  background: ep.method === 'GET' ? 'rgba(34, 197, 94, 0.1)' :
-                    ep.method === 'POST' ? 'rgba(99, 102, 241, 0.1)' :
-                      ep.method === 'PUT' ? 'rgba(245, 158, 11, 0.1)' :
-                        'rgba(239, 68, 68, 0.1)',
-                  color: ep.method === 'GET' ? 'var(--success)' :
-                    ep.method === 'POST' ? 'var(--accent-primary)' :
-                      ep.method === 'PUT' ? 'var(--warning)' :
-                        'var(--error)',
-                }}>
-                  {ep.method}
-                </span>
-                <code style={{ fontSize: '0.88rem', fontWeight: 500 }}>{ep.path}</code>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginLeft: 'auto' }}>{ep.description}</span>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
+                <div className="card bg-white/5 border-white/10">
+                  <h3 className="font-heading font-bold text-xl text-white mb-6">Service Endpoints</h3>
+                  <div className="space-y-3">
+                    {[
+                      { method: 'GET', path: '/api/v1/stores/:id/map', desc: 'Retrieve store layout and node coordinates', bg: 'bg-green-500/10', text: 'text-green-400', border: 'border-green-500/20' },
+                      { method: 'POST', path: '/api/v1/routes/optimize', desc: 'Calculate shortest path through the store', bg: 'bg-blue-500/10', text: 'text-blue-400', border: 'border-blue-500/20' },
+                      { method: 'PUT', path: '/api/v1/lists/:id/items', desc: 'Update checked status of list items', bg: 'bg-amber-500/10', text: 'text-amber-400', border: 'border-amber-500/20' },
+                    ].map((api, i) => (
+                      <div key={i} className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 bg-black/40 rounded-xl border border-white/5 hover:border-white/10 transition-colors">
+                        <div className={`w-[60px] text-center font-mono text-[10px] font-bold py-1.5 rounded-lg border ${api.bg} ${api.text} ${api.border}`}>
+                          {api.method}
+                        </div>
+                        <div className="font-mono text-sm text-gray-200 w-[240px] truncate">{api.path}</div>
+                        <div className="font-sans text-sm text-gray-400 flex-1">{api.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-      {/* Deployment */}
-      {data.deploymentStrategy && (
-        <Section title="Deployment Strategy">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            <InfoCard label="Approach" value={data.deploymentStrategy.approach} />
-            <InfoCard label="Scaling" value={data.deploymentStrategy.scalingStrategy} />
-            {data.deploymentStrategy.environments && (
-              <InfoCard label="Environments" value={data.deploymentStrategy.environments.join(' → ')} />
+                <div className="bg-[#030303] rounded-2xl p-6 overflow-x-auto shadow-2xl border border-white/5 relative group">
+                  <div className="absolute top-0 right-0 p-4 font-mono text-xs text-gray-600 font-bold">algo.js</div>
+                  <div className="flex gap-2 mb-6">
+                    <div className="w-3 h-3 rounded-full bg-red-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/80" />
+                  </div>
+                  <pre className="font-mono text-sm text-gray-300 leading-relaxed">
+<span className="text-gray-500">// Example Routing Service (Node.js)</span>
+<br />
+<span className="text-violet-400">class</span> <span className="text-emerald-400">RoutingService</span> {'{'}
+<br />
+&nbsp;&nbsp;<span className="text-violet-400">async</span> <span className="text-blue-400">calculateOptimalPath</span>(storeId, itemLocations) {'{'}
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-violet-400">const</span> storeGraph = <span className="text-violet-400">await</span> db.storeMaps.<span className="text-blue-400">getGraph</span>(storeId);
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-gray-500">// Using an optimized Traveling Salesperson approach</span>
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-violet-400">const</span> route = <span className="text-violet-400">await</span> PathfindingAlgo.<span className="text-blue-400">solve</span>(storeGraph, {'{'}
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;startNode: <span className="text-amber-300">'ENTRANCE'</span>,
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;waypoints: itemLocations,
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;endNode: <span className="text-amber-300">'CHECKOUT'</span>
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;{'}'});
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;
+<br />
+&nbsp;&nbsp;&nbsp;&nbsp;<span className="text-violet-400">return</span> route;
+<br />
+&nbsp;&nbsp;{'}'}
+<br />
+{'}'}
+                  </pre>
+                </div>
+              </div>
             )}
           </div>
-        </Section>
-      )}
+        )}
+      </div>
 
-      {/* Starter Code */}
-      {data.starterCode?.projectStructure && (
-        <Section title="Project Structure">
-          <pre style={{
-            padding: '16px',
-            borderRadius: '10px',
-            background: 'var(--bg-card)',
-            fontFamily: 'monospace',
-            fontSize: '0.85rem',
-            color: 'var(--text-secondary)',
-            overflow: 'auto',
-            lineHeight: 1.6,
-            whiteSpace: 'pre-wrap',
-          }}>
-            {data.starterCode.projectStructure}
-          </pre>
-        </Section>
-      )}
-    </div>
-  );
-}
-
-/* ─── Shared Components ─── */
-function Section({ title, children }: { title: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <div>
-      <h3 style={{
-        fontSize: '1.05rem',
-        fontWeight: 700,
-        marginBottom: '14px',
-        paddingBottom: '8px',
-        borderBottom: '1px solid var(--border-color)',
-      }}>
-        {title}
-      </h3>
-      {children}
-    </div>
-  );
-}
-
-function InfoCard({ label, value }: { label: string; value: string | undefined }) {
-  if (!value) return null;
-  return (
-    <div style={{
-      padding: '14px 16px',
-      borderRadius: '10px',
-      background: 'var(--bg-card)',
-    }}>
-      <p className="section-label" style={{ marginBottom: '4px' }}>{label}</p>
-      <p style={{ fontWeight: 500, fontSize: '0.92rem', lineHeight: 1.5 }}>{value}</p>
     </div>
   );
 }

@@ -2,6 +2,23 @@ export interface User {
   id: string;
   email: string;
   name?: string | null;
+  passwordHash?: string | null;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CreateUserDTO {
+  email: string;
+  password: string;
+  name?: string;
+}
+
+export interface LoginDTO {
+  email: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  user: Omit<User, 'passwordHash'>;
+  token: string;
 }

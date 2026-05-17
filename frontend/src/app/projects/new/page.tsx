@@ -2,188 +2,106 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { api } from '@/lib/api';
+import { Sparkles, ArrowRight, Lightbulb, Zap, Code2 } from 'lucide-react';
 
 export default function NewProjectPage() {
+  const [idea, setIdea] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const project = await api.projects.create({ name, description });
-      router.push(`/projects/${project.id}`);
-    } catch (err: any) {
-      setError(err.message);
-      setLoading(false);
-    }
+  const handleExampleClick = (text: string) => {
+    setIdea(text);
   };
 
-  const examplePrompts = [
-    {
-      name: 'Smart Grocery Optimizer',
-      desc: 'An AI-powered grocery shopping platform that suggests recipes based on sale items and nutritional goals for busy professionals.',
-    },
-    {
-      name: 'Remote Team Culture Sync',
-      desc: 'A framework for distributed teams to build culture through asynchronous rituals and AI-matched networking chats.',
-    },
-    {
-      name: 'Freelance Financial Suite',
-      desc: 'An automated finance tool for independent contractors focusing on tax estimation and cash flow forecasting.',
-    },
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!idea.trim()) return;
+    
+    setIsSubmitting(true);
+    setTimeout(() => {
+      router.push('/projects/new-123');
+    }, 1500);
+  };
+
+  const examples = [
+    { title: "Smart Grocery", icon: Lightbulb, text: "An AI-powered grocery shopping app that learns user preferences and creates optimized paths through the store." },
+    { title: "Design to Code", icon: Code2, text: "A developer tool that automatically converts Figma designs into production-ready React components with Tailwind CSS." },
+    { title: "Freelancer OS", icon: Zap, text: "A micro-SaaS for freelancers to manage subscriptions, invoices, and client communication in one dashboard." }
   ];
 
   return (
-    <div className="container" style={{ maxWidth: '800px' }}>
-      <div className="fade-in">
-        {/* Header */}
-        <div style={{ marginBottom: '56px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: 'clamp(2rem, 4vw, 2.75rem)', fontWeight: 800, marginBottom: '16px', letterSpacing: '-0.03em' }}>
-            New Project <span style={{ color: 'var(--accent-primary)' }}>Architecture</span>
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto' }}>
-            Provide your startup concept details. Our AI agents will analyze the business model and generate a technical blueprint.
-          </p>
-        </div>
+    <div className="w-full flex flex-col items-center justify-center animate-slide-up" style={{ minHeight: 'calc(100vh - 140px)', padding: '24px 0' }}>
+      <div className="w-full max-w-[800px]">
+        <div className="text-center" style={{ marginBottom: '48px' }}>
+          <div className="inline-flex items-center rounded-full bg-violet-500/10 text-violet-400 text-xs font-bold tracking-widest uppercase border border-violet-500/20" style={{ gap: '8px', padding: '8px 16px', marginBottom: '24px' }}>
+            <Sparkles size={14} className="animate-pulse" /> AI Orchestrator
+          </div>
+          <h1 className="font-heading font-bold text-5xl text-white tracking-tight" style={{ marginBottom: '16px' }}>
+          What's your vision?
+        </h1>
+        <p className="text-gray-400 text-lg max-w-lg mx-auto">
+          Describe the problem you're solving, and we'll architect the entire platform in seconds.
+        </p>
+      </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          <div className="glass-card" style={{ padding: '48px', background: 'rgba(15, 23, 42, 0.4)' }}>
-            {/* Name */}
-            <div style={{ marginBottom: '32px' }}>
-              <label className="section-label" htmlFor="project-name" style={{ display: 'block', marginBottom: '12px' }}>
-                Project Designation
-              </label>
-              <input
-                id="project-name"
-                type="text"
-                className="input-field"
-                placeholder="e.g. Project Orion"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                minLength={2}
-                maxLength={100}
-                style={{ padding: '16px' }}
-              />
+      <div className="glass-panel rounded-3xl relative overflow-hidden shadow-2xl border-white/10 group box-border" style={{ padding: '32px' }}>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/10 blur-[80px] group-hover:bg-violet-600/20 transition-colors pointer-events-none" />
+        
+        <form onSubmit={handleSubmit} className="relative z-10">
+          <div className="relative" style={{ marginBottom: '24px' }}>
+            <div className="absolute top-4 text-violet-400/50" style={{ left: '16px' }}>
+              <Sparkles size={24} />
             </div>
+            <textarea 
+              className="w-full bg-black/40 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500 transition-all text-lg min-h-[200px] resize-none box-border"
+              placeholder="e.g. A platform that connects local artisans with global buyers, using AI to match aesthetics..."
+              value={idea}
+              onChange={(e) => setIdea(e.target.value)}
+              style={{ padding: '24px 24px 24px 48px' }}
+            />
+          </div>
 
-            {/* Description */}
-            <div style={{ marginBottom: '40px' }}>
-              <label className="section-label" htmlFor="project-description" style={{ display: 'block', marginBottom: '12px' }}>
-                Concept & Core Objectives
-              </label>
-              <textarea
-                id="project-description"
-                className="input-field"
-                placeholder="Describe the problem, target audience, and primary features..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                required
-                minLength={10}
-                rows={8}
-                style={{ minHeight: '180px', padding: '16px', lineHeight: 1.6 }}
-              />
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginTop: '12px',
-              }}>
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                  Detailed descriptions yield more accurate system designs.
-                </span>
-                <span style={{
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: description.length < 10 ? 'var(--text-muted)' : 'var(--accent-primary)',
-                }}>
-                  {description.length} chars
-                </span>
-              </div>
+          <div style={{ marginBottom: '32px' }}>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest" style={{ marginBottom: '16px' }}>Or try an example</p>
+            <div className="grid grid-cols-1 md:grid-cols-3" style={{ gap: '12px' }}>
+              {examples.map((ex, i) => (
+                <button 
+                  key={i}
+                  type="button"
+                  onClick={() => handleExampleClick(ex.text)}
+                  className="flex items-start rounded-xl bg-white/5 border border-white/5 text-left hover:bg-violet-500/10 hover:border-violet-500/30 transition-all group/btn box-border"
+                  style={{ gap: '12px', padding: '16px' }}
+                >
+                  <ex.icon size={16} className="mt-0.5 text-gray-500 group-hover/btn:text-violet-400 shrink-0" />
+                  <span className="text-sm font-medium text-gray-300 group-hover/btn:text-white leading-snug">{ex.title}</span>
+                </button>
+              ))}
             </div>
+          </div>
 
-            {/* Error */}
-            {error && (
-              <div style={{
-                padding: '16px',
-                borderRadius: '8px',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                color: 'var(--error)',
-                fontSize: '0.9rem',
-                marginBottom: '32px',
-                fontWeight: 500,
-              }}>
-                {error}
-              </div>
+          <button 
+            type="submit" 
+            disabled={!idea.trim() || isSubmitting}
+            className={`w-full rounded-2xl font-bold text-lg flex items-center justify-center transition-all shadow-[0_0_40px_rgba(139,92,246,0.3)] box-border
+              ${(!idea.trim() || isSubmitting) 
+                ? 'bg-gray-800 text-gray-500 cursor-not-allowed shadow-none' 
+                : 'bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white hover:shadow-[0_0_60px_rgba(139,92,246,0.5)] transform hover:-translate-y-1'}`
+            }
+            style={{ padding: '20px 0', gap: '12px' }}
+          >
+            {isSubmitting ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Architecting Solution...
+              </>
+            ) : (
+              <>
+                Generate Architecture <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </>
             )}
-
-            {/* Submit */}
-            <button
-              type="submit"
-              className="btn-gradient"
-              disabled={loading || name.length < 2 || description.length < 10}
-              style={{ width: '100%', padding: '18px', fontSize: '1rem', letterSpacing: '0.01em' }}
-            >
-              {loading ? (
-                <>
-                  <span className="spinner" style={{ marginRight: '12px' }} />
-                  Processing Architecture...
-                </>
-              ) : (
-                'Generate Full Architecture'
-              )}
-            </button>
-          </div>
+          </button>
         </form>
-
-        {/* Example Prompts */}
-        <div style={{ marginTop: '64px', paddingBottom: '64px' }}>
-          <div style={{ marginBottom: '24px' }}>
-            <h4 style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
-              Example Concepts
-            </h4>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
-            {examplePrompts.map((example, index) => (
-              <button
-                key={example.name}
-                type="button"
-                className="glass-card"
-                onClick={() => {
-                  setName(example.name);
-                  setDescription(example.desc);
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                }}
-                style={{
-                  padding: '24px',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  border: '1px solid var(--border-color)',
-                }}
-              >
-                <h5 style={{ fontWeight: 700, marginBottom: '8px', fontSize: '1rem', color: 'var(--text-primary)' }}>
-                  {example.name}
-                </h5>
-                <p style={{
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                  lineHeight: 1.6,
-                  margin: 0
-                }}>
-                  {example.desc}
-                </p>
-              </button>
-            ))}
-          </div>
-        </div>
+      </div>
       </div>
     </div>
   );

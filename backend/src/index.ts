@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import projectRoutes from './interfaces/routes/projectRoutes';
+import authRoutes from './interfaces/routes/authRoutes';
 import { errorHandler } from './interfaces/middlewares/errorHandler';
 
 const app = express();
@@ -11,6 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 
 // Error Handler
